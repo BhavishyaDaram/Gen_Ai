@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wire — News Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #12151a;
+    --panel: #1b1f26;
+    --panel-line: #2a2f38;
+    --paper: #f4efe4;
+    --paper-line: #ddd3ba;
+    --text: #eae6db;
+    --text-muted: #8c93a0;
+    --ink-on-paper: #1f2733;
+    --ink-on-paper-muted: #6a6252;
+    --amber: #e3a857;
+    --amber-dim: #a97c3f;
+    --teal: #6e9b92;
+    --danger: #c96a5a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 760px;
+  }
+
+  /* ---------- Header ---------- */
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--panel-line);
+    padding-bottom: 18px;
+    margin-bottom: 34px;
+  }
+
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    color: var(--text);
+  }
+
+  .brand span {
+    color: var(--amber);
+  }
+
+  .status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .status .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .status.live .dot {
+    background: var(--amber);
+    box-shadow: 0 0 0 3px rgba(227, 168, 87, 0.18);
+  }
+
+  /* ---------- Query bar ---------- */
+
+  form.query {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .prompt-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    padding-left: 2px;
+    white-space: nowrap;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 13px 14px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--text-muted);
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--amber-dim);
+  }
+
+  button.run {
+    background: var(--amber);
+    color: #1c1408;
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0 22px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+  }
+
+  button.run:hover:not(:disabled) { background: #edb972; }
+  button.run:active:not(:disabled) { transform: translateY(1px); }
+  button.run:disabled { opacity: 0.5; cursor: default; }
+
+  .hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    padding-left: 2px;
+    margin-bottom: 30px;
+  }
+
+  /* ---------- Result states ---------- */
+
+  .placeholder {
+    border: 1px dashed var(--panel-line);
+    border-radius: 4px;
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .placeholder strong {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .error-box {
+    border: 1px solid rgba(201, 106, 90, 0.4);
+    background: rgba(201, 106, 90, 0.08);
+    color: #e3a89c;
+    border-radius: 4px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin-bottom: 24px;
+  }
+
+  .error-box .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--danger);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 24px 2px;
+  }
+
+  .loading .bars {
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 14px;
+  }
+
+  .loading .bars span {
+    width: 3px;
+    background: var(--amber);
+    display: inline-block;
+    animation: bounce 0.9s ease-in-out infinite;
+  }
+  .loading .bars span:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .loading .bars span:nth-child(2) { height: 100%; animation-delay: 0.12s; }
+  .loading .bars span:nth-child(3) { height: 65%; animation-delay: 0.24s; }
+  .loading .bars span:nth-child(4) { height: 85%; animation-delay: 0.36s; }
+
+  @keyframes bounce {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loading .bars span { animation: none; }
+  }
+
+  /* ---------- Brief card ---------- */
+
+  .brief {
+    background: var(--paper);
+    color: var(--ink-on-paper);
+    border-radius: 4px;
+    padding: 28px 30px 24px;
+    margin-bottom: 26px;
+  }
+
+  .brief .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-on-paper-muted);
+    border-bottom: 1px solid var(--paper-line);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .brief h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0 0 16px;
+    color: var(--ink-on-paper);
+  }
+
+  .brief ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .brief li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .brief li:last-child { margin-bottom: 0; }
+
+  .brief li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--amber-dim);
+  }
+
+  /* ---------- Sources ---------- */
+
+  .sources-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  .source {
+    display: block;
+    border: 1px solid var(--panel-line);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .source:hover {
+    border-color: var(--amber-dim);
+    background: rgba(227, 168, 87, 0.04);
+  }
+
+  .source .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    margin-right: 8px;
+  }
+
+  .source .title {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .source .domain {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    margin-top: 4px;
+    margin-left: 20px;
+  }
+
+  footer {
+    margin-top: 48px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--panel-line);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">wire<span>.</span>brief</div>
+      <div class="status" id="status">
+        <span class="dot"></span>
+        <span id="statusText">idle</span>
+      </div>
+    </header>
+
+    <form class="query" id="queryForm">
+      <span class="prompt-label">query&gt;</span>
+      <input
+        type="text"
+        id="questionInput"
+        placeholder="e.g. latest developments in fusion energy"
+        autocomplete="off"
+      />
+      <button class="run" id="runBtn" type="submit">Search</button>
+    </form>
+    <div class="hint">Pulls live results, then synthesizes them into a short brief.</div>
+
+    <div id="results">
+      <div class="placeholder">
+        <strong>No brief yet</strong>
+        Enter a topic above to pull current sources and generate a summary.
+      </div>
+    </div>
+
+    <footer>tavily search · gemini-flash-lite-latest</footer>
+  </div>
+
+<script>
+  const form = document.getElementById('queryForm');
+  const input = document.getElementById('questionInput');
+  const runBtn = document.getElementById('runBtn');
+  const results = document.getElementById('results');
+  const status = document.getElementById('status');
+  const statusText = document.getElementById('statusText');
+
+  function setStatus(state, label) {
+    status.classList.toggle('live', state === 'live');
+    statusText.textContent = label;
+  }
+
+  function domainFromUrl(url) {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return '';
+    }
+  }
+
+  function renderLoading(question) {
+    results.innerHTML = `
+      <div class="loading">
+        <span class="bars"><span></span><span></span><span></span><span></span></span>
+        <span>searching &amp; synthesizing — "${escapeHtml(question)}"</span>
+      </div>
+    `;
+  }
+
+  function renderError(message) {
+    results.innerHTML = `
+      <div class="error-box">
+        <span class="label">request failed</span>
+        ${escapeHtml(message)}
+      </div>
+      <div class="placeholder">
+        <strong>No brief yet</strong>
+        Try again, or check that the backend is running with valid API keys.
+      </div>
+    `;
+  }
+
+  function renderResult(data) {
+    const bulletLines = data.answer
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0)
+      .map(l => l.replace(/^[-•*]\s*/, ''));
+
+    const bulletsHtml = bulletLines.map(b => `<li>${escapeHtml(b)}</li>`).join('');
+
+    const sourcesHtml = data.sources.map((s, i) => {
+      const domain = domainFromUrl(s.url || '');
+      return `
+        <a class="source" href="${s.url ? escapeAttr(s.url) : '#'}" target="_blank" rel="noopener">
+          <span class="num">[${i + 1}]</span><span class="title">${escapeHtml(s.title || s.url || 'Untitled source')}</span>
+          ${domain ? `<span class="domain">${escapeHtml(domain)}</span>` : ''}
+        </a>
+      `;
+    }).join('');
+
+    results.innerHTML = `
+      <div class="brief">
+        <div class="meta">
+          <span>query: ${escapeHtml(data.question)}</span>
+          <span>${bulletLines.length} points</span>
+        </div>
+        <h2>Brief</h2>
+        <ul>${bulletsHtml}</ul>
+      </div>
+      <div class="sources-label">sources (${data.sources.length})</div>
+      ${sourcesHtml}
+    `;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function escapeAttr(str) {
+    return str.replace(/"/g, '&quot;');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+
+    runBtn.disabled = true;
+    setStatus('live', 'fetching');
+    renderLoading(question);
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server responded with ${res.status}`);
+      }
+
+      const data = await res.json();
+      renderResult(data);
+      setStatus('idle', 'done');
+    } catch (err) {
+      renderError(err.message || 'Something went wrong.');
+      setStatus('idle', 'error');
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
