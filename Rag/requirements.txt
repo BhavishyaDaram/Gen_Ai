@@ -1,7 +1,8 @@
 langchain
 langchain-core
 langchain-community
-
+langchain-huggingface
+sentence-transformers
 # LLM Providers
 
 langchain-openai
